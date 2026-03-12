@@ -27,10 +27,12 @@ function createSandboxContext(overrides?: Partial<SandboxContext>): SandboxConte
       deny: ["browser"],
     },
     browserAllowHostControl: true,
+    browserAvailable: true,
     browser: {
       bridgeUrl: "http://localhost:9222",
       noVncUrl: "http://localhost:6080",
       containerName: "openclaw-sbx-browser-test",
+      ownerKey: "agent:main",
     },
   } satisfies SandboxContext;
   return { ...base, ...overrides };
@@ -50,6 +52,7 @@ describe("buildEmbeddedSandboxInfo", () => {
       containerWorkspaceDir: "/workspace",
       workspaceAccess: "none",
       agentWorkspaceMount: undefined,
+      browserAvailable: true,
       browserBridgeUrl: "http://localhost:9222",
       browserNoVncUrl: "http://localhost:6080",
       hostBrowserAllowed: true,
@@ -74,6 +77,7 @@ describe("buildEmbeddedSandboxInfo", () => {
       containerWorkspaceDir: "/workspace",
       workspaceAccess: "none",
       agentWorkspaceMount: undefined,
+      browserAvailable: true,
       hostBrowserAllowed: false,
       elevated: { allowed: true, defaultLevel: "on" },
     });

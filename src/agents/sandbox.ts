@@ -16,6 +16,7 @@ export { buildSandboxCreateArgs } from "./sandbox/docker.js";
 export {
   listSandboxBrowsers,
   listSandboxContainers,
+  removeSandboxBrowserIdentityForAgent,
   removeSandboxBrowserContainer,
   removeSandboxContainer,
   type SandboxBrowserInfo,

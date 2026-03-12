@@ -535,7 +535,11 @@ export function buildAgentSystemPrompt(params: {
                   : ""
               }`
             : "",
-          params.sandboxInfo.browserBridgeUrl ? "Sandbox browser: enabled." : "",
+          params.sandboxInfo.browserBridgeUrl
+            ? "Sandbox browser: enabled."
+            : params.sandboxInfo.browserAvailable
+              ? "Sandbox browser: available on demand."
+              : "",
           params.sandboxInfo.browserNoVncUrl
             ? `Sandbox browser observer (noVNC): ${sanitizeForPromptLiteral(params.sandboxInfo.browserNoVncUrl)}`
             : "",

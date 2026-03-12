@@ -16,6 +16,7 @@ export function buildEmbeddedSandboxInfo(
     containerWorkspaceDir: sandbox.containerWorkdir,
     workspaceAccess: sandbox.workspaceAccess,
     agentWorkspaceMount: sandbox.workspaceAccess === "ro" ? "/agent" : undefined,
+    browserAvailable: sandbox.browserAvailable,
     browserBridgeUrl: sandbox.browser?.bridgeUrl,
     browserNoVncUrl: sandbox.browser?.noVncUrl,
     hostBrowserAllowed: sandbox.browserAllowHostControl,

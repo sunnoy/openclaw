@@ -317,6 +317,38 @@ describe("browser tool snapshot maxChars", () => {
     expect(gatewayMocks.callGatewayTool).not.toHaveBeenCalled();
   });
 
+  it("lazy-resolves sandbox browser only when sandbox is targeted", async () => {
+    const getSandboxBrowser = vi.fn(async () => ({ bridgeUrl: "http://127.0.0.1:9999" }));
+    const tool = createBrowserTool({
+      sandboxAvailable: true,
+      getSandboxBrowser,
+    });
+
+    await tool.execute?.("call-1", { action: "status" });
+
+    expect(getSandboxBrowser).toHaveBeenCalledTimes(1);
+    expect(browserClientMocks.browserStatus).toHaveBeenCalledWith(
+      "http://127.0.0.1:9999",
+      expect.objectContaining({ profile: undefined }),
+    );
+  });
+
+  it("does not lazy-resolve sandbox browser when target=host", async () => {
+    const getSandboxBrowser = vi.fn(async () => ({ bridgeUrl: "http://127.0.0.1:9999" }));
+    const tool = createBrowserTool({
+      sandboxAvailable: true,
+      getSandboxBrowser,
+    });
+
+    await tool.execute?.("call-1", { action: "status", target: "host" });
+
+    expect(getSandboxBrowser).not.toHaveBeenCalled();
+    expect(browserClientMocks.browserStatus).toHaveBeenCalledWith(
+      undefined,
+      expect.objectContaining({ profile: undefined }),
+    );
+  });
+
   it("keeps chrome profile on host when node proxy is available", async () => {
     mockSingleBrowserProxyNode();
     const tool = createBrowserTool();

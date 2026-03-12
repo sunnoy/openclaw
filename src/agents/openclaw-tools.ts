@@ -29,6 +29,8 @@ import { resolveWorkspaceRoot } from "./workspace-dir.js";
 export function createOpenClawTools(
   options?: {
     sandboxBrowserBridgeUrl?: string;
+    sandboxBrowserAvailable?: boolean;
+    getSandboxBrowser?: () => Promise<{ bridgeUrl: string } | null>;
     allowHostBrowserControl?: boolean;
     agentSessionKey?: string;
     agentChannel?: GatewayMessageChannel;
@@ -138,6 +140,8 @@ export function createOpenClawTools(
   const tools: AnyAgentTool[] = [
     createBrowserTool({
       sandboxBridgeUrl: options?.sandboxBrowserBridgeUrl,
+      sandboxAvailable: options?.sandboxBrowserAvailable,
+      getSandboxBrowser: options?.getSandboxBrowser,
       allowHostControl: options?.allowHostBrowserControl,
       agentSessionKey: options?.agentSessionKey,
     }),

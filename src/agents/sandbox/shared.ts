@@ -44,3 +44,18 @@ export function resolveSandboxAgentId(scopeKey: string): string | undefined {
   }
   return resolveAgentIdFromSessionKey(trimmed);
 }
+
+export function resolveSandboxBrowserOwnerKey(params: {
+  sessionKey?: string;
+  agentId?: string;
+}): string {
+  const agentId = normalizeAgentId(
+    params.agentId?.trim() || resolveSandboxAgentId(params.sessionKey ?? "") || "main",
+  );
+  return `agent:${agentId}`;
+}
+
+export function resolveSandboxBrowserStateDir(root: string, agentId: string): string {
+  const resolvedRoot = resolveUserPath(root);
+  return path.join(resolvedRoot, "agents", normalizeAgentId(agentId));
+}

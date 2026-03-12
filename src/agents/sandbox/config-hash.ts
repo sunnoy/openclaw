@@ -18,6 +18,8 @@ type SandboxBrowserHashInput = {
   workspaceAccess: SandboxWorkspaceAccess;
   workspaceDir: string;
   agentWorkspaceDir: string;
+  stateDir?: string;
+  stateEnabled?: boolean;
 };
 
 function normalizeForHash(value: unknown): unknown {

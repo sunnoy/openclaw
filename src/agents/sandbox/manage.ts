@@ -1,3 +1,5 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import { stopBrowserBridgeServer } from "../../browser/bridge-server.js";
 import { loadConfig } from "../../config/config.js";
 import { BROWSER_BRIDGES } from "./browser-bridges.js";
@@ -11,7 +13,11 @@ import {
   type SandboxBrowserRegistryEntry,
   type SandboxRegistryEntry,
 } from "./registry.js";
-import { resolveSandboxAgentId } from "./shared.js";
+import {
+  resolveSandboxAgentId,
+  resolveSandboxBrowserOwnerKey,
+  resolveSandboxBrowserStateDir,
+} from "./shared.js";
 
 export type SandboxContainerInfo = SandboxRegistryEntry & {
   running: boolean;
@@ -102,5 +108,47 @@ export async function removeSandboxBrowserContainer(containerName: string): Prom
       await stopBrowserBridgeServer(bridge.bridge.server).catch(() => undefined);
       BROWSER_BRIDGES.delete(sessionKey);
     }
+  }
+}
+
+export async function removeSandboxBrowserIdentityForAgent(
+  agentId: string,
+  cfg = loadConfig(),
+): Promise<void> {
+  const normalizedAgentId = resolveSandboxAgentId(`agent:${agentId}`) ?? agentId;
+  const ownerKey = resolveSandboxBrowserOwnerKey({ agentId: normalizedAgentId });
+  const registry = await readBrowserRegistry();
+  const matchingEntries = registry.entries.filter((entry) => {
+    if (entry.sessionKey === ownerKey) {
+      return true;
+    }
+    return resolveSandboxAgentId(entry.sessionKey) === normalizedAgentId;
+  });
+
+  for (const entry of matchingEntries) {
+    await removeSandboxBrowserContainer(entry.containerName);
+  }
+
+  const tracked = BROWSER_BRIDGES.get(ownerKey);
+  if (tracked) {
+    await stopBrowserBridgeServer(tracked.bridge.server).catch(() => undefined);
+    BROWSER_BRIDGES.delete(ownerKey);
+  }
+
+  const browserCfg = resolveSandboxConfigForAgent(cfg, normalizedAgentId).browser;
+  if (!browserCfg.state.enabled) {
+    return;
+  }
+
+  const stateDir = resolveSandboxBrowserStateDir(browserCfg.state.root, normalizedAgentId);
+  await fs.rm(stateDir, { recursive: true, force: true }).catch(() => undefined);
+  const agentsRoot = path.join(browserCfg.state.root, "agents");
+  try {
+    const remaining = await fs.readdir(agentsRoot);
+    if (remaining.length === 0) {
+      await fs.rmdir(agentsRoot).catch(() => undefined);
+    }
+  } catch {
+    // ignore
   }
 }

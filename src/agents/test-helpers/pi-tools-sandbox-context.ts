@@ -39,5 +39,6 @@ export function createPiToolsSandboxContext(params: PiToolsSandboxContextParams)
     },
     tools: params.tools ?? { allow: [], deny: [] },
     browserAllowHostControl: params.browserAllowHostControl ?? false,
+    browserAvailable: false,
   };
 }

@@ -5,7 +5,11 @@ export const BROWSER_BRIDGES = new Map<
   {
     bridge: BrowserBridge;
     containerName: string;
+    ownerKey: string;
+    stateDir?: string;
     authToken?: string;
     authPassword?: string;
+    activeRequests: number;
+    lastUsedAtMs: number;
   }
 >();

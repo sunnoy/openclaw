@@ -15,6 +15,7 @@ const dockerMocks = vi.hoisted(() => ({
 
 const registryMocks = vi.hoisted(() => ({
   readBrowserRegistry: vi.fn(),
+  removeBrowserRegistryEntry: vi.fn(),
   updateBrowserRegistry: vi.fn(),
 }));
 
@@ -37,6 +38,7 @@ vi.mock("./docker.js", async (importOriginal) => {
 
 vi.mock("./registry.js", () => ({
   readBrowserRegistry: registryMocks.readBrowserRegistry,
+  removeBrowserRegistryEntry: registryMocks.removeBrowserRegistryEntry,
   updateBrowserRegistry: registryMocks.updateBrowserRegistry,
 }));
 
@@ -66,6 +68,7 @@ function buildConfig(enableNoVnc: boolean): SandboxConfig {
       image: "openclaw-sandbox-browser:bookworm-slim",
       containerPrefix: "openclaw-sbx-browser-",
       network: "openclaw-sandbox-browser",
+      startPolicy: "lazy",
       cdpPort: 9222,
       vncPort: 5900,
       noVncPort: 6080,
@@ -74,6 +77,13 @@ function buildConfig(enableNoVnc: boolean): SandboxConfig {
       allowHostControl: false,
       autoStart: true,
       autoStartTimeoutMs: 12_000,
+      idleStopAfterMs: 30 * 60 * 1000,
+      removeStoppedAfterMs: 7 * 24 * 60 * 60 * 1000,
+      state: {
+        enabled: true,
+        root: "/tmp/openclaw-browser-state",
+        retainAfterMs: 30 * 24 * 60 * 60 * 1000,
+      },
     },
     tools: {
       allow: ["browser"],
@@ -96,6 +106,7 @@ describe("ensureSandboxBrowser create args", () => {
     dockerMocks.readDockerContainerLabel.mockClear();
     dockerMocks.readDockerPort.mockClear();
     registryMocks.readBrowserRegistry.mockClear();
+    registryMocks.removeBrowserRegistryEntry.mockClear();
     registryMocks.updateBrowserRegistry.mockClear();
     bridgeMocks.startBrowserBridgeServer.mockClear();
     bridgeMocks.stopBrowserBridgeServer.mockClear();
@@ -136,7 +147,9 @@ describe("ensureSandboxBrowser create args", () => {
 
   it("publishes noVNC on loopback and injects noVNC password env", async () => {
     const result = await ensureSandboxBrowser({
-      scopeKey: "session:test",
+      ownerKey: "agent:test",
+      agentId: "test",
+      sessionKey: "session:test",
       workspaceDir: "/tmp/workspace",
       agentWorkspaceDir: "/tmp/workspace",
       cfg: buildConfig(true),
@@ -154,11 +167,14 @@ describe("ensureSandboxBrowser create args", () => {
     expect(passwordEntry).toMatch(/^OPENCLAW_BROWSER_NOVNC_PASSWORD=[A-Za-z0-9]{8}$/);
     expect(result?.noVncUrl).toMatch(/^http:\/\/127\.0\.0\.1:19000\/sandbox\/novnc\?token=/);
     expect(result?.noVncUrl).not.toContain("password=");
+    expect(result?.ownerKey).toBe("agent:test");
   });
 
   it("does not inject noVNC password env when noVNC is disabled", async () => {
     const result = await ensureSandboxBrowser({
-      scopeKey: "session:test",
+      ownerKey: "agent:test",
+      agentId: "test",
+      sessionKey: "session:test",
       workspaceDir: "/tmp/workspace",
       agentWorkspaceDir: "/tmp/workspace",
       cfg: buildConfig(false),
@@ -172,12 +188,13 @@ describe("ensureSandboxBrowser create args", () => {
     expect(result?.noVncUrl).toBeUndefined();
   });
 
-  it("mounts the main workspace read-only when workspaceAccess is none", async () => {
+  it("mounts a persistent per-agent state directory and explicit browser home env", async () => {
     const cfg = buildConfig(false);
-    cfg.workspaceAccess = "none";
 
     await ensureSandboxBrowser({
-      scopeKey: "session:test",
+      ownerKey: "agent:test",
+      agentId: "test",
+      sessionKey: "session:test",
       workspaceDir: "/tmp/workspace",
       agentWorkspaceDir: "/tmp/workspace",
       cfg,
@@ -186,24 +203,9 @@ describe("ensureSandboxBrowser create args", () => {
     const createArgs = findDockerArgsCall(dockerMocks.execDocker.mock.calls, "create");
 
     expect(createArgs).toBeDefined();
-    expect(createArgs).toContain("/tmp/workspace:/workspace:ro");
-  });
-
-  it("keeps the main workspace writable when workspaceAccess is rw", async () => {
-    const cfg = buildConfig(false);
-    cfg.workspaceAccess = "rw";
-
-    await ensureSandboxBrowser({
-      scopeKey: "session:test",
-      workspaceDir: "/tmp/workspace",
-      agentWorkspaceDir: "/tmp/workspace",
-      cfg,
-    });
-
-    const createArgs = findDockerArgsCall(dockerMocks.execDocker.mock.calls, "create");
-
-    expect(createArgs).toBeDefined();
-    expect(createArgs).toContain("/tmp/workspace:/workspace");
-    expect(createArgs).not.toContain("/tmp/workspace:/workspace:ro");
+    expect(createArgs).toContain("/tmp/openclaw-browser-state/agents/test:/state");
+    const envEntries = collectDockerFlagValues(createArgs ?? [], "-e");
+    expect(envEntries).toContain("OPENCLAW_BROWSER_HOME=/state/home");
+    expect(envEntries).toContain("OPENCLAW_BROWSER_USER_DATA_DIR=/state/home/.chrome");
   });
 });

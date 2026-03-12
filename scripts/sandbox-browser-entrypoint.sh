@@ -17,9 +17,10 @@ dedupe_chrome_args() {
 }
 
 export DISPLAY=:1
-export HOME=/tmp/openclaw-home
-export XDG_CONFIG_HOME="${HOME}/.config"
-export XDG_CACHE_HOME="${HOME}/.cache"
+export HOME="${OPENCLAW_BROWSER_HOME:-/tmp/openclaw-home}"
+export OPENCLAW_BROWSER_USER_DATA_DIR="${OPENCLAW_BROWSER_USER_DATA_DIR:-${HOME}/.chrome}"
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-${HOME}/.cache}"
 
 CDP_PORT="${OPENCLAW_BROWSER_CDP_PORT:-${CLAWDBOT_BROWSER_CDP_PORT:-9222}}"
 CDP_SOURCE_RANGE="${OPENCLAW_BROWSER_CDP_SOURCE_RANGE:-${CLAWDBOT_BROWSER_CDP_SOURCE_RANGE:-}}"
@@ -33,7 +34,7 @@ DISABLE_GRAPHICS_FLAGS="${OPENCLAW_BROWSER_DISABLE_GRAPHICS_FLAGS:-1}"
 DISABLE_EXTENSIONS="${OPENCLAW_BROWSER_DISABLE_EXTENSIONS:-1}"
 RENDERER_PROCESS_LIMIT="${OPENCLAW_BROWSER_RENDERER_PROCESS_LIMIT:-2}"
 
-mkdir -p "${HOME}" "${HOME}/.chrome" "${XDG_CONFIG_HOME}" "${XDG_CACHE_HOME}"
+mkdir -p "${HOME}" "${OPENCLAW_BROWSER_USER_DATA_DIR}" "${XDG_CONFIG_HOME}" "${XDG_CACHE_HOME}"
 
 Xvfb :1 -screen 0 1280x800x24 -ac -nolisten tcp &
 
@@ -54,7 +55,7 @@ fi
 CHROME_ARGS+=(
   "--remote-debugging-address=127.0.0.1"
   "--remote-debugging-port=${CHROME_CDP_PORT}"
-  "--user-data-dir=${HOME}/.chrome"
+  "--user-data-dir=${OPENCLAW_BROWSER_USER_DATA_DIR}"
   "--no-first-run"
   "--no-default-browser-check"
   "--disable-dev-shm-usage"

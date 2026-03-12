@@ -595,6 +595,7 @@ describe("Agent-specific tool filtering", () => {
         },
         fsBridge: sandboxFsBridgeStub,
         browserAllowHostControl: false,
+        browserAvailable: false,
       },
     });
 

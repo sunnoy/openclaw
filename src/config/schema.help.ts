@@ -366,6 +366,30 @@ export const FIELD_HELP: Record<string, string> = {
   "agents.defaults.sandbox.browser.network":
     "Docker network for sandbox browser containers (default: openclaw-sandbox-browser). Avoid bridge if you need stricter isolation.",
   "agents.list[].sandbox.browser.network": "Per-agent override for sandbox browser Docker network.",
+  "agents.defaults.sandbox.browser.startPolicy":
+    'Browser lifecycle policy for sandbox sessions: "lazy" starts on first sandbox-targeted browser tool use, "eager" preserves prewarming behavior.',
+  "agents.list[].sandbox.browser.startPolicy":
+    "Per-agent override for sandbox browser start policy.",
+  "agents.defaults.sandbox.browser.idleStopAfter":
+    "Stop an idle sandbox browser container after this duration (for example 30m). The browser state directory remains intact.",
+  "agents.list[].sandbox.browser.idleStopAfter":
+    "Per-agent override for sandbox browser idle stop timing.",
+  "agents.defaults.sandbox.browser.removeStoppedAfter":
+    "Remove a stopped sandbox browser container after this duration (for example 7d). Persistent browser state is preserved.",
+  "agents.list[].sandbox.browser.removeStoppedAfter":
+    "Per-agent override for sandbox browser stopped-container retention.",
+  "agents.defaults.sandbox.browser.state.enabled":
+    "Enable persistent per-agent sandbox browser state so cookies/local storage survive container stops and restarts.",
+  "agents.list[].sandbox.browser.state.enabled":
+    "Per-agent override for persistent sandbox browser state.",
+  "agents.defaults.sandbox.browser.state.root":
+    "Host root for persistent sandbox browser state directories. Each agent stores data under <root>/agents/<agentId>.",
+  "agents.list[].sandbox.browser.state.root":
+    "Per-agent override for sandbox browser state root.",
+  "agents.defaults.sandbox.browser.state.retainAfter":
+    "Remove unused sandbox browser state directories after this retention window once no browser container remains.",
+  "agents.list[].sandbox.browser.state.retainAfter":
+    "Per-agent override for sandbox browser state retention.",
   "agents.defaults.sandbox.docker.dangerouslyAllowContainerNamespaceJoin":
     "DANGEROUS break-glass override that allows sandbox Docker network mode container:<id>. This joins another container namespace and weakens sandbox isolation.",
   "agents.list[].sandbox.docker.dangerouslyAllowContainerNamespaceJoin":

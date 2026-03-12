@@ -285,6 +285,32 @@ describe("sandbox browser binds config", () => {
     expect(resolved.cdpSourceRange).toBe("172.22.0.1/32");
   });
 
+  it("parses browser lifecycle durations and persistent state settings", () => {
+    const resolved = resolveSandboxBrowserConfig({
+      scope: "agent",
+      globalBrowser: {
+        startPolicy: "lazy",
+        idleStopAfter: "45m",
+        removeStoppedAfter: "9d",
+        state: {
+          enabled: true,
+          root: "~/custom-browser-state",
+          retainAfter: "14d",
+        },
+      },
+      agentBrowser: {
+        idleStopAfter: "15m",
+      },
+    });
+
+    expect(resolved.startPolicy).toBe("lazy");
+    expect(resolved.idleStopAfterMs).toBe(15 * 60 * 1000);
+    expect(resolved.removeStoppedAfterMs).toBe(9 * 24 * 60 * 60 * 1000);
+    expect(resolved.state.enabled).toBe(true);
+    expect(resolved.state.root.endsWith("custom-browser-state")).toBe(true);
+    expect(resolved.state.retainAfterMs).toBe(14 * 24 * 60 * 60 * 1000);
+  });
+
   it("rejects host network mode in sandbox.browser config", () => {
     const res = validateConfigObject({
       agents: {

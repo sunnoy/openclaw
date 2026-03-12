@@ -14,6 +14,7 @@ import { createSandboxFsBridge } from "./fs-bridge.js";
 import { maybePruneSandboxes } from "./prune.js";
 import { resolveSandboxRuntimeStatus } from "./runtime-status.js";
 import { resolveSandboxScopeKey, resolveSandboxWorkspaceDir } from "./shared.js";
+import { isToolAllowed } from "./tool-policy.js";
 import type { SandboxContext, SandboxDockerConfig, SandboxWorkspaceInfo } from "./types.js";
 import { ensureSandboxWorkspace } from "./workspace.js";
 
@@ -138,33 +139,38 @@ export async function resolveSandboxContext(params: {
     cfg: resolvedCfg,
   });
 
-  const evaluateEnabled =
-    params.config?.browser?.evaluateEnabled ?? DEFAULT_BROWSER_EVALUATE_ENABLED;
+  const evaluateEnabled = params.config?.browser?.evaluateEnabled ?? DEFAULT_BROWSER_EVALUATE_ENABLED;
+  const browserAvailable = resolvedCfg.browser.enabled && isToolAllowed(resolvedCfg.tools, "browser");
 
-  const bridgeAuth = cfg.browser.enabled
-    ? await (async () => {
-        // Sandbox browser bridge server runs on a loopback TCP port; always wire up
-        // the same auth that loopback browser clients will send (token/password).
-        const cfgForAuth = params.config ?? loadConfig();
-        let browserAuth = resolveBrowserControlAuth(cfgForAuth);
-        try {
-          const ensured = await ensureBrowserControlAuth({ cfg: cfgForAuth });
-          browserAuth = ensured.auth;
-        } catch (error) {
-          const message = error instanceof Error ? error.message : JSON.stringify(error);
-          defaultRuntime.error?.(`Sandbox browser auth ensure failed: ${message}`);
+  const ensureBrowser =
+    browserAvailable
+      ? async () => {
+          // Sandbox browser bridge server runs on a loopback TCP port; always wire up
+          // the same auth that loopback browser clients will send (token/password).
+          const cfgForAuth = params.config ?? loadConfig();
+          let browserAuth = resolveBrowserControlAuth(cfgForAuth);
+          try {
+            const ensured = await ensureBrowserControlAuth({ cfg: cfgForAuth });
+            browserAuth = ensured.auth;
+          } catch (error) {
+            const message = error instanceof Error ? error.message : JSON.stringify(error);
+            defaultRuntime.error?.(`Sandbox browser auth ensure failed: ${message}`);
+          }
+          return await ensureSandboxBrowser({
+            ownerKey: `agent:${resolved.runtime.agentId}`,
+            agentId: resolved.runtime.agentId,
+            sessionKey: rawSessionKey,
+            workspaceDir,
+            agentWorkspaceDir,
+            cfg: resolvedCfg,
+            evaluateEnabled,
+            bridgeAuth: browserAuth,
+          });
         }
-        return browserAuth;
-      })()
-    : undefined;
-  const browser = await ensureSandboxBrowser({
-    scopeKey,
-    workspaceDir,
-    agentWorkspaceDir,
-    cfg: resolvedCfg,
-    evaluateEnabled,
-    bridgeAuth,
-  });
+      : undefined;
+
+  const browser =
+    ensureBrowser && resolvedCfg.browser.startPolicy === "eager" ? await ensureBrowser() : undefined;
 
   const sandboxContext: SandboxContext = {
     enabled: true,
@@ -177,7 +183,9 @@ export async function resolveSandboxContext(params: {
     docker: resolvedCfg.docker,
     tools: resolvedCfg.tools,
     browserAllowHostControl: resolvedCfg.browser.allowHostControl,
+    browserAvailable,
     browser: browser ?? undefined,
+    ensureBrowser,
   };
 
   sandboxContext.fsBridge = createSandboxFsBridge({ sandbox: sandboxContext });

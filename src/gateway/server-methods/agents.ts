@@ -5,6 +5,7 @@ import {
   resolveAgentDir,
   resolveAgentWorkspaceDir,
 } from "../../agents/agent-scope.js";
+import { removeSandboxBrowserIdentityForAgent } from "../../agents/sandbox.js";
 import {
   DEFAULT_AGENTS_FILENAME,
   DEFAULT_BOOTSTRAP_FILENAME,
@@ -625,6 +626,7 @@ export const agentsHandlers: GatewayRequestHandlers = {
         moveToTrashBestEffort(workspaceDir),
         moveToTrashBestEffort(agentDir),
         moveToTrashBestEffort(sessionsDir),
+        removeSandboxBrowserIdentityForAgent(agentId, cfg),
       ]);
     }
 

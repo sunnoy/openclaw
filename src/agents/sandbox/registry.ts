@@ -25,6 +25,10 @@ export type SandboxBrowserRegistryEntry = {
   configHash?: string;
   cdpPort: number;
   noVncPort?: number;
+  stateDir?: string;
+  status?: "running" | "stopped";
+  stoppedAtMs?: number;
+  lastBridgeAtMs?: number;
 };
 
 type SandboxBrowserRegistry = {

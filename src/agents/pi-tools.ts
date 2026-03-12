@@ -488,6 +488,13 @@ export function createOpenClawCodingTools(options?: {
     ...listChannelAgentTools({ cfg: options?.config }),
     ...createOpenClawTools({
       sandboxBrowserBridgeUrl: sandbox?.browser?.bridgeUrl,
+      sandboxBrowserAvailable: sandbox?.browserAvailable,
+      getSandboxBrowser: sandbox?.ensureBrowser
+        ? async () => {
+            const browser = await sandbox.ensureBrowser?.();
+            return browser ? { bridgeUrl: browser.bridgeUrl } : null;
+          }
+        : undefined,
       allowHostBrowserControl: sandbox ? sandbox.browserAllowHostControl : true,
       agentSessionKey: options?.sessionKey,
       agentChannel: resolveGatewayMessageChannel(options?.messageProvider),

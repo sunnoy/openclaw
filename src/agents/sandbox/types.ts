@@ -33,6 +33,7 @@ export type SandboxBrowserConfig = {
   image: string;
   containerPrefix: string;
   network: string;
+  startPolicy: "eager" | "lazy";
   cdpPort: number;
   cdpSourceRange?: string;
   vncPort: number;
@@ -42,6 +43,13 @@ export type SandboxBrowserConfig = {
   allowHostControl: boolean;
   autoStart: boolean;
   autoStartTimeoutMs: number;
+  idleStopAfterMs: number;
+  removeStoppedAfterMs: number;
+  state: {
+    enabled: boolean;
+    root: string;
+    retainAfterMs: number;
+  };
   binds?: string[];
 };
 
@@ -67,6 +75,8 @@ export type SandboxBrowserContext = {
   bridgeUrl: string;
   noVncUrl?: string;
   containerName: string;
+  ownerKey: string;
+  stateDir?: string;
 };
 
 export type SandboxContext = {
@@ -80,7 +90,9 @@ export type SandboxContext = {
   docker: SandboxDockerConfig;
   tools: SandboxToolPolicy;
   browserAllowHostControl: boolean;
+  browserAvailable: boolean;
   browser?: SandboxBrowserContext;
+  ensureBrowser?: () => Promise<SandboxBrowserContext | null>;
   fsBridge?: SandboxFsBridge;
 };
 

@@ -36,6 +36,7 @@ export function createSandboxTestContext(params?: {
     containerWorkdir: "/workspace",
     tools: { allow: ["*"], deny: [] },
     browserAllowHostControl: false,
+    browserAvailable: false,
     ...sandboxOverrides,
     docker,
   };

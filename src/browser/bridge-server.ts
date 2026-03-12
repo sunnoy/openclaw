@@ -63,6 +63,8 @@ export async function startBrowserBridgeServer(params: {
   authToken?: string;
   authPassword?: string;
   onEnsureAttachTarget?: (profile: ProfileContext["profile"]) => Promise<void>;
+  onRequestStart?: () => void | Promise<void>;
+  onRequestEnd?: () => void | Promise<void>;
   resolveSandboxNoVncToken?: (token: string) => ResolvedNoVncObserver | null;
 }): Promise<BrowserBridge> {
   const host = params.host ?? "127.0.0.1";
@@ -100,6 +102,24 @@ export async function startBrowserBridgeServer(params: {
     throw new Error("bridge server requires auth (authToken/authPassword missing)");
   }
   installBrowserAuthMiddleware(app, { token: authToken, password: authPassword });
+
+  if (params.onRequestStart || params.onRequestEnd) {
+    app.use((req, res, next) => {
+      void params.onRequestStart?.();
+      let settled = false;
+      const finish = () => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        void params.onRequestEnd?.();
+      };
+      res.once("finish", finish);
+      res.once("close", finish);
+      req.once("aborted", finish);
+      next();
+    });
+  }
 
   const state: BrowserServerState = {
     server: null as unknown as Server,

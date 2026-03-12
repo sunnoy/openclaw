@@ -1,12 +1,20 @@
 import type { OpenClawConfig } from "../../config/config.js";
+import type { SandboxBrowserSettings } from "../../config/types.sandbox.js";
+import { parseDurationMs } from "../../cli/parse-duration.js";
+import { resolveUserPath } from "../../utils.js";
 import { resolveAgentConfig } from "../agent-scope.js";
 import {
   DEFAULT_SANDBOX_BROWSER_AUTOSTART_TIMEOUT_MS,
   DEFAULT_SANDBOX_BROWSER_CDP_PORT,
   DEFAULT_SANDBOX_BROWSER_IMAGE,
+  DEFAULT_SANDBOX_BROWSER_IDLE_STOP_AFTER_MS,
   DEFAULT_SANDBOX_BROWSER_NETWORK,
   DEFAULT_SANDBOX_BROWSER_NOVNC_PORT,
   DEFAULT_SANDBOX_BROWSER_PREFIX,
+  DEFAULT_SANDBOX_BROWSER_REMOVE_STOPPED_AFTER_MS,
+  DEFAULT_SANDBOX_BROWSER_START_POLICY,
+  DEFAULT_SANDBOX_BROWSER_STATE_RETAIN_AFTER_MS,
+  DEFAULT_SANDBOX_BROWSER_STATE_ROOT,
   DEFAULT_SANDBOX_BROWSER_VNC_PORT,
   DEFAULT_SANDBOX_CONTAINER_PREFIX,
   DEFAULT_SANDBOX_IDLE_HOURS,
@@ -121,8 +129,8 @@ export function resolveSandboxDockerConfig(params: {
 
 export function resolveSandboxBrowserConfig(params: {
   scope: SandboxScope;
-  globalBrowser?: Partial<SandboxBrowserConfig>;
-  agentBrowser?: Partial<SandboxBrowserConfig>;
+  globalBrowser?: Partial<SandboxBrowserSettings>;
+  agentBrowser?: Partial<SandboxBrowserSettings>;
 }): SandboxBrowserConfig {
   const agentBrowser = params.scope === "shared" ? undefined : params.agentBrowser;
   const globalBrowser = params.globalBrowser;
@@ -137,6 +145,10 @@ export function resolveSandboxBrowserConfig(params: {
       globalBrowser?.containerPrefix ??
       DEFAULT_SANDBOX_BROWSER_PREFIX,
     network: agentBrowser?.network ?? globalBrowser?.network ?? DEFAULT_SANDBOX_BROWSER_NETWORK,
+    startPolicy:
+      agentBrowser?.startPolicy ??
+      globalBrowser?.startPolicy ??
+      DEFAULT_SANDBOX_BROWSER_START_POLICY,
     cdpPort: agentBrowser?.cdpPort ?? globalBrowser?.cdpPort ?? DEFAULT_SANDBOX_BROWSER_CDP_PORT,
     cdpSourceRange: agentBrowser?.cdpSourceRange ?? globalBrowser?.cdpSourceRange,
     vncPort: agentBrowser?.vncPort ?? globalBrowser?.vncPort ?? DEFAULT_SANDBOX_BROWSER_VNC_PORT,
@@ -150,6 +162,33 @@ export function resolveSandboxBrowserConfig(params: {
       agentBrowser?.autoStartTimeoutMs ??
       globalBrowser?.autoStartTimeoutMs ??
       DEFAULT_SANDBOX_BROWSER_AUTOSTART_TIMEOUT_MS,
+    idleStopAfterMs: (() => {
+      const raw = agentBrowser?.idleStopAfter ?? globalBrowser?.idleStopAfter;
+      if (!raw?.trim()) {
+        return DEFAULT_SANDBOX_BROWSER_IDLE_STOP_AFTER_MS;
+      }
+      return parseDurationMs(raw, { defaultUnit: "m" });
+    })(),
+    removeStoppedAfterMs: (() => {
+      const raw = agentBrowser?.removeStoppedAfter ?? globalBrowser?.removeStoppedAfter;
+      if (!raw?.trim()) {
+        return DEFAULT_SANDBOX_BROWSER_REMOVE_STOPPED_AFTER_MS;
+      }
+      return parseDurationMs(raw, { defaultUnit: "d" });
+    })(),
+    state: {
+      enabled: agentBrowser?.state?.enabled ?? globalBrowser?.state?.enabled ?? true,
+      root: resolveUserPath(
+        agentBrowser?.state?.root ?? globalBrowser?.state?.root ?? DEFAULT_SANDBOX_BROWSER_STATE_ROOT,
+      ),
+      retainAfterMs: (() => {
+        const raw = agentBrowser?.state?.retainAfter ?? globalBrowser?.state?.retainAfter;
+        if (!raw?.trim()) {
+          return DEFAULT_SANDBOX_BROWSER_STATE_RETAIN_AFTER_MS;
+        }
+        return parseDurationMs(raw, { defaultUnit: "d" });
+      })(),
+    },
     binds: bindsConfigured ? binds : undefined,
   };
 }

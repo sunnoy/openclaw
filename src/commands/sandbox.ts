@@ -1,4 +1,5 @@
 import { confirm as clackConfirm } from "@clack/prompts";
+import { resolveSessionAgentId } from "../agents/agent-scope.js";
 import {
   listSandboxBrowsers,
   listSandboxContainers,
@@ -122,8 +123,9 @@ async function fetchAndFilterContainers(opts: SandboxRecreateOptions): Promise<F
   let browsers = opts.browser ? allBrowsers : [];
 
   if (opts.session) {
+    const browserOwnerKey = `agent:${resolveSessionAgentId({ sessionKey: opts.session })}`;
     containers = containers.filter((c) => c.sessionKey === opts.session);
-    browsers = browsers.filter((b) => b.sessionKey === opts.session);
+    browsers = browsers.filter((b) => b.sessionKey === browserOwnerKey);
   } else if (opts.agent) {
     const matchesAgent = createAgentMatcher(opts.agent);
     containers = containers.filter(matchesAgent);

@@ -65,6 +65,8 @@ export type SandboxBrowserSettings = {
   containerPrefix?: string;
   /** Docker network for sandbox browser containers (default: openclaw-sandbox-browser). */
   network?: string;
+  /** Browser start policy. `lazy` starts on first sandbox-targeted browser tool use. */
+  startPolicy?: "eager" | "lazy";
   cdpPort?: number;
   /** Optional CIDR allowlist for CDP ingress at the container edge (for example: 172.21.0.1/32). */
   cdpSourceRange?: string;
@@ -84,6 +86,17 @@ export type SandboxBrowserSettings = {
   autoStart?: boolean;
   /** Max time to wait for CDP to become reachable after auto-start (ms). */
   autoStartTimeoutMs?: number;
+  /** Stop an idle browser container after this duration (for example: 30m). */
+  idleStopAfter?: string;
+  /** Remove a stopped browser container after this duration (for example: 7d). */
+  removeStoppedAfter?: string;
+  /** Persistent browser state settings. */
+  state?: {
+    enabled?: boolean;
+    root?: string;
+    /** Remove browser state after this retention window once no container remains (for example: 30d). */
+    retainAfter?: string;
+  };
   /** Additional bind mounts for the browser container only. When set, replaces docker.binds for the browser container. */
   binds?: string[];
 };

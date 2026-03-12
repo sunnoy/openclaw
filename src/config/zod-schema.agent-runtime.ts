@@ -209,6 +209,7 @@ export const SandboxBrowserSchema = z
     image: z.string().optional(),
     containerPrefix: z.string().optional(),
     network: z.string().optional(),
+    startPolicy: z.enum(["eager", "lazy"]).optional(),
     cdpPort: z.number().int().positive().optional(),
     cdpSourceRange: z.string().optional(),
     vncPort: z.number().int().positive().optional(),
@@ -218,6 +219,16 @@ export const SandboxBrowserSchema = z
     allowHostControl: z.boolean().optional(),
     autoStart: z.boolean().optional(),
     autoStartTimeoutMs: z.number().int().positive().optional(),
+    idleStopAfter: z.string().optional(),
+    removeStoppedAfter: z.string().optional(),
+    state: z
+      .object({
+        enabled: z.boolean().optional(),
+        root: z.string().optional(),
+        retainAfter: z.string().optional(),
+      })
+      .strict()
+      .optional(),
     binds: z.array(z.string()).optional(),
   })
   .superRefine((data, ctx) => {
@@ -228,6 +239,25 @@ export const SandboxBrowserSchema = z
         message:
           'Sandbox security: browser network mode "host" is blocked. Use "bridge" or a custom bridge network instead.',
       });
+    }
+    const durationFields = [
+      ["idleStopAfter", data.idleStopAfter, "m"],
+      ["removeStoppedAfter", data.removeStoppedAfter, "d"],
+      ["state.retainAfter", data.state?.retainAfter, "d"],
+    ] as const;
+    for (const [field, value, defaultUnit] of durationFields) {
+      if (!value?.trim()) {
+        continue;
+      }
+      try {
+        parseDurationMs(value, { defaultUnit });
+      } catch {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: field.split("."),
+          message: `Invalid duration for ${field} (examples: 30m, 7d, 1h30m).`,
+        });
+      }
     }
   })
   .strict()
